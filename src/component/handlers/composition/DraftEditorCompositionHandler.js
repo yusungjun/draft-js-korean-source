@@ -84,11 +84,11 @@ const DraftEditorCompositionHandler = {
   onCompositionEnd(editor: DraftEditor): void {
     resolved = false;
     stillComposing = false;
-    setTimeout(() => {
+    // setTimeout(() => {
       if (!resolved) {
         DraftEditorCompositionHandler.resolveComposition(editor);
       }
-    }, RESOLVE_DELAY);
+    // }, RESOLVE_DELAY);
   },
 
   onSelect: editOnSelect,
@@ -105,13 +105,13 @@ const DraftEditorCompositionHandler = {
       // comment doesn't make sense. With this change, it should prevent
       // over-firing the resolveComposition() method, which might help fix
       // some existing IME issues.
-      if (!resolved) {
+      // if (!resolved) {
         // If a keydown event is received after compositionend but before the
         // 20ms timer expires (ex: type option-E then backspace, or type A then
         // backspace in 2-Set Korean), we should immediately resolve the
         // composition and reinterpret the key press in edit mode.
         DraftEditorCompositionHandler.resolveComposition(editor);
-      }
+      // }
       editor._onKeyDown(e);
       return;
     }
@@ -207,17 +207,16 @@ const DraftEditorCompositionHandler = {
         contentState,
         replacementRange,
       );
-      const currentStyle = contentState
-        .getBlockForKey(blockKey)
-        .getInlineStyleAt(start);
 
-      contentState = DraftModifier.replaceText(
-        contentState,
-        replacementRange,
-        composedChars,
-        currentStyle,
-        entityKey,
-      );
+      if (localStorage.getItem('enter_block_key') != '') {
+        let endIdx = editorState.getBlockTree(localStorage.getItem('enter_block_key'))._tail.array[0].end - 1;
+        var currentStyle = contentState.getBlockForKey(localStorage.getItem('enter_block_key')).getInlineStyleAt(endIdx);
+        contentState = DraftModifier.replaceText(contentState, replacementRange, composedChars, currentStyle, entityKey); // We need to update the editorState so the leaf node ranges are properly
+      }
+      else {
+          var currentStyle = contentState.getBlockForKey(blockKey).getInlineStyleAt(start);
+          contentState = DraftModifier.replaceText(contentState, replacementRange, composedChars, currentStyle, entityKey); // We need to update the editorState so the leaf node ranges are properly  
+      }
       // We need to update the editorState so the leaf node ranges are properly
       // updated and multiple mutations are correctly applied.
       editorState = EditorState.set(editorState, {
@@ -257,6 +256,7 @@ const DraftEditorCompositionHandler = {
         'insert-characters',
       ),
     );
+    localStorage.setItem('enter_block_key', '')
   },
 };
 
